@@ -10,7 +10,7 @@ apply plugin: 'distribution'
 apply plugin: 'java-library-distribution'
 apply plugin: 'os-package'
 apply plugin: 'net.researchgate.release'
-apply plugin: 'sonar-runner'
+apply plugin: 'org.sonarqube'
 apply plugin: 'jacoco'
 // END
 
@@ -89,30 +89,12 @@ idea {
 // places,1p-service, 1p-project-templates, and 1p-secor-service
 buildscript {
   repositories {
-
-     // 1p-service stuff - BEGIN
-     mavenCentral()
-     jcenter()
-     maven {
-       url = "https://clojars.org/repo/"
-     }
-     maven {
-       url 'https://oss.sonatype.org/content/groups/public'
-     }
-     maven {
-       url 'http://kundera.googlecode.com/svn/maven2/maven-missing-resources'
-     }
-
-     maven {
-       url "http://repo.1p.thomsonreuters.com/nexus/content/repositories/thirdparty/"
-     }
-     maven {
-       url "http://repo.1p.thomsonreuters.com/nexus/content/repositories/snapshots/"
-     }
-     maven {
-       url "http://repo.1p.thomsonreuters.com/nexus/content/repositories/releases/"
-     }
-     // END
+   maven {
+     url "http://repo.oneplatform.build/nexus/content/groups/public/"
+   }
+   maven {
+     url "http://repo.oneplatform.build/nexus/content/groups/private/"
+   }
      
         
      maven { url "http://maven.twttr.com" }
@@ -132,35 +114,18 @@ buildscript {
     classpath group: 'com.bmuschko',        name: 'gradle-nexus-plugin', version: '2.3'
     classpath group: 'eu.appsatori',        name: 'gradle-fatjar-plugin', version: '0.3'
     classpath group: 'com.thomsonreuters',  name: 'storm-deploy', version: '2.4.+'
+    classpath group: 'org.sonarsource.scanner.gradle', name: 'sonarqube-gradle-plugin', version: '1.2'
     // END 
   }
 }
 
 repositories {
-
-     // 1p-service stuff - BEGIN
-     mavenCentral()
-     jcenter()
-     maven {
-       url = "https://clojars.org/repo/"
-     }
-     maven {
-       url 'https://oss.sonatype.org/content/groups/public'
-     }
-     maven {
-       url 'http://kundera.googlecode.com/svn/maven2/maven-missing-resources'
-     }
-
-     maven {
-       url "http://repo.1p.thomsonreuters.com/nexus/content/repositories/thirdparty/"
-     }
-     maven {
-       url "http://repo.1p.thomsonreuters.com/nexus/content/repositories/snapshots/"
-     }
-     maven {
-       url "http://repo.1p.thomsonreuters.com/nexus/content/repositories/releases/"
-     }
-     // END
+   maven {
+     url "http://repo.oneplatform.build/nexus/content/groups/public/"
+   }
+   maven {
+     url "http://repo.oneplatform.build/nexus/content/groups/private/"
+   }
      
         
      maven { url "http://maven.twttr.com" }
@@ -258,26 +223,33 @@ ospackage {
 
 buildRpm.dependsOn installDist
 
-sonarRunner {
-  sonarProperties {
-    property "sonar.host.url", "http://sonar.oneplatform.build"
-    property "sonar.jdbc.url", "jdbc:mysql://sonar.c35w2xq4gxyh.us-west-2.rds.amazonaws.com:3306/sonar?useUnicode=true&characterEncoding=utf8&rewriteBatchedStatements=true"
-    property "sonar.jdbc.driverClassName", "com.mysql.jdbc.Driver"
-    property "sonar.jdbc.username", "$System.env.sonarUsername"
-    property "sonar.jdbc.password", "$System.env.sonarPassword"
-  }
+sonarqube {
+    properties {
+        property "sonar.projectName", "One Platform :: Project Neon :: Authoring"
+        property "sonar.projectKey", "com.thomsonreuters:1p-authoring"
+        property "sonar.jacoco.reportPath", "${project.buildDir}/jacoco/test.exec"
+        property "sonar.exclusions", [
+          'src/main/java/com/thomsonreuters/handler/**',
+          'src/main/java/com/thomsonreuters/util/**',
+          'src/main/java/com/thomsonreuters/server/**',
+          'src/main/java/com/thomsonreuters/injection/**',
+          'src/main/java/com/thomsonreuters/rest/service/StatusResource.java',
+          'src/main/java/com/thomsonreuters/rest/service/HealthcheckResource.java'
+        ]
+    }
 }
 
 jacoco {
-    toolVersion = "0.7.4.+"
-    reportsDir = file("$buildDir/reports/coverage")
+  toolVersion = "0.7.6+"
+  reportsDir = file("${project.buildDir}/jacoco/reports")
 }
 
 jacocoTestReport {
     reports {
         xml.enabled true
+        html.enabled true
         csv.enabled false
-        html.destination "${buildDir}/reports/coverage/html"
+        html.destination "${project.buildDir}/jacoco/reports/coverage/html"
     }
 }
 //END
